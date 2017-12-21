@@ -1,0 +1,52 @@
+# Use openjdk image as a source
+FROM openjdk:alpine
+
+#================================
+#===== List of arguments ========
+# Username to start Jenkins
+ARG user=jenkins
+
+# Directory with lenkins.war file
+ARG start_folder=/usr/bin/jenkins
+
+# Directory with Jenkins logs
+ARG log_folder=/var/log/jenkins
+
+# User home folder
+ARG home_folder=/home/jenkins
+
+# Latest jenkins.war file
+ARG war_url=http://mirrors.jenkins.io/war-stable/latest/jenkins.war
+#================================
+
+# Add additional info to the image
+LABEL maintainer="Evgeny Minikh <evgeny.minih@gmail.com>"
+LABEL description="My first container with Jenkins"
+
+# Create necessary folders and add access rights for them
+RUN adduser -h ${home_folder} -D ${user} && \
+	apk update && \
+	apk add ttf-dejavu && \
+	mkdir -p ${start_folder} && \
+	mkdir -p ${log_folder} && \
+	mkdir -p ${home_folder}/.jenkins && \
+	chown -R ${user}:${user} ${home_folder}/.jenkins && \
+	chown -R ${user}:${user} ${log_folder}
+
+# Copy build of Jenkins into the container
+ADD ${war_url} ${start_folder}/
+
+RUN chown -R ${user}:${user} ${start_folder}
+
+# Open port 8080
+EXPOSE 8080
+
+# Change user to execute next commands
+USER ${user}
+WORKDIR ${start_folder}
+
+VOLUME ${home_folder}/.jenkins ${log_folder}
+
+# When container runs, execute command "java -jar jenkins.war" to start Jenkins
+ENTRYPOINT ["java"]
+CMD ["-jar", "jenkins.war"]
